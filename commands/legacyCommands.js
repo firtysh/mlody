@@ -3,10 +3,14 @@ import {
   joinVoiceChannel,
   createAudioPlayer,
   getVoiceConnection,
-  createAudioResource,
   VoiceConnectionStatus,
 } from '@discordjs/voice';
-import ytdl from 'ytdl-core';
+import ytsr from 'ytsr';
+import makeResource from '../utils/makeResource.js';
+import {
+  addSong,
+  nextSong,
+} from '../utils/musicQueue.js';
 
 export default {
   ping: {
@@ -63,7 +67,7 @@ export default {
   leave: {
     description: 'Leave audio channel',
     acceptArgs: false,
-    execute: async ({ message, client }) => {
+    execute: async ({ message }) => {
       const voiceConnection = getVoiceConnection(message.guild.id);
       if (!voiceConnection) {
         await message.reply('Not in a voice channel');
@@ -81,33 +85,62 @@ export default {
     description: 'Play a song',
     acceptArgs: true,
     execute: async ({ message, args }) => {
+      // get voice connection by guild id
       const voiceConnection = getVoiceConnection(message.guild.id);
-      if (!voiceConnection) {
+      if (!voiceConnection) { // if bot is not in a voice channel
         await message.reply('Not in a voice channel');
         return;
       }
       if (message.member.voice.channel.id !== voiceConnection?.joinConfig.channelId) {
+        // if user is not in the same voice channel as the bot
         await message.reply('You need to join the voice channel first!');
         return;
       }
       try {
-        if (!ytdl.validateURL(args)) {
-          await message.reply('Not a valid URL');
-          return;
-        }
-        const audio = ytdl(args, { quality: 'highestaudio' });
+        // get first result from youtube search
+        const { url, title, duration } = (await ytsr(args, { limit: 1 })).items[0];
+
+        // generate song object
+        const song = {
+          title,
+          url,
+          duration,
+          requestedBy: message.author.username,
+        };
+
+        // add song to queue
+        addSong({ guild: message.guild.id, song });
+
         const player = createAudioPlayer();
-        const resource = createAudioResource(audio, { inlineVolume: true });
         voiceConnection.subscribe(player);
-        player.play(resource);
-        player.on('error', (error) => {
+        if (player.state.status === 'idle') {
+          player.play(makeResource(url));
+        }
+
+        player.on('stateChange', async (oldState, newState) => {
+          console.log('state chnged from', oldState.status, 'to', newState.status);
+          if (newState.status === 'idle') {
+            const next = nextSong({ guild: message.guild.id });
+            if (next) {
+              player.play(makeResource(next.url));
+              await message.reply(`Playing ${next.title}`);
+            } else {
+              await message.reply('No more songs in queue');
+            }
+          }
+        });
+
+        player.on('error', async (error) => {
+          await message.reply('Error playing song');
           console.log(error);
           player.stop();
         });
+
+        await message.reply(`Playing${url}`);
       } catch (error) {
         console.log(error);
+        await message.reply('Could not play song');
       }
-      await message.reply(`Playing${args}`);
     },
   },
 };

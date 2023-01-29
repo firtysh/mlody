@@ -1,12 +1,15 @@
 {
   "name": "mlody",
   "version": "1.0.0",
-  "description": "",
+  "description": "Mlody bot for discord which plays music from youtube",
   "main": "index.js",
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "start": "node index.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "repository": {
     "type": "git",
@@ -25,7 +28,8 @@
     "dotenv": "^16.0.3",
     "ffmpeg-static": "^5.1.0",
     "libsodium-wrappers": "^0.7.10",
-    "ytdl-core": "^4.11.2"
+    "ytdl-core": "^4.11.2",
+    "ytsr": "^3.8.0"
   },
   "devDependencies": {
     "eslint": "^8.28.0",
