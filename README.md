@@ -11,8 +11,8 @@
 ## 🔧 **Requirements**
 
 1. Discord Bot Token **[Guide](https://discordjs.guide/preparations/setting-up-a-bot-application.html#creating-your-bot)**  
-   1.1. Enable 'Message Content Intent' in Discord Developer Portal
-2. Node.js 16.11.0 or newer
+   1.1. Enable **Privileged Intents** in Discord Developer Portal
+2. Node.js 16.17.0 or newer
 ----
 
 ## 🚀 **Getting Started**
@@ -37,7 +37,7 @@ COMMAND_PREFIX=<YOUR-PREFIX-HERE>
 ----
 ## 🤝 Contributing
 1. [Fork the repository](https://github.com/firtysh/mlody/fork "Fork the repository")
-2. Clone your fork : ` git clone https://github.com/your-username/mlodyt.git `
+2. Clone your fork : ` git clone https://github.com/your-username/mlody.git `
 3. Create your feature branch: ` git checkout -b my-new-feature `
 4. Stage changes `git add .`
 5. Commit your changes: `git commit -m "your commit message"`
