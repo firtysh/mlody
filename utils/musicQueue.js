@@ -1,5 +1,5 @@
 const queue = new Map();
-function addSong({ guild, song }) {
+function addSong({ guild, song, player }) {
   /**
    * Add song to queue.
    * @param {object} song - song object
@@ -21,6 +21,7 @@ function addSong({ guild, song }) {
         requestedBy: song.requestedBy,
         duration: song.duration,
       }],
+      player,
       currentSong: 0,
     });
   } else {
@@ -33,6 +34,9 @@ function addSong({ guild, song }) {
     });
   }
 }
+function getQueue({ guild }) {
+  return queue.get(guild);
+}
 function nextSong({ guild }) {
   // Increment currentSong
   queue.get(guild).currentSong += 1;
@@ -41,5 +45,5 @@ function nextSong({ guild }) {
 }
 
 export {
-  addSong, nextSong,
+  addSong, nextSong, getQueue,
 };

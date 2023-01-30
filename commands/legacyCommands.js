@@ -10,6 +10,7 @@ import makeResource from '../utils/makeResource.js';
 import {
   addSong,
   nextSong,
+  getQueue,
 } from '../utils/musicQueue.js';
 
 export default {
@@ -107,36 +108,28 @@ export default {
           duration,
           requestedBy: message.author.username,
         };
-
-        // add song to queue
-        addSong({ guild: message.guild.id, song });
-
-        const player = createAudioPlayer();
-        voiceConnection.subscribe(player);
-        if (player.state.status === 'idle') {
-          player.play(makeResource(url));
-        }
-
-        player.on('stateChange', async (oldState, newState) => {
-          console.log('state chnged from', oldState.status, 'to', newState.status);
-          if (newState.status === 'idle') {
-            const next = nextSong({ guild: message.guild.id });
-            if (next) {
-              player.play(makeResource(next.url));
-              await message.reply(`Playing ${next.title}`);
-            } else {
-              await message.reply('No more songs in queue');
+        if (!getQueue({ guild: message.guild.id })) {
+          const player = createAudioPlayer();
+          player.on('stateChange', async (oldState, newState) => {
+            console.log('state chnged from', oldState.status, 'to', newState.status);
+            if (newState.status === 'idle') {
+              const next = nextSong({ guild: message.guild.id });
+              if (next) {
+                player.play(makeResource(next.url));
+                await message.reply(`Playing ${next.title}`);
+              } else {
+                await message.reply('No more songs in queue');
+              }
             }
-          }
-        });
-
-        player.on('error', async (error) => {
-          await message.reply('Error playing song');
-          console.log(error);
-          player.stop();
-        });
-
-        await message.reply(`Playing${url}`);
+          });
+          addSong({ guild: message.guild.id, song, player });
+          voiceConnection.subscribe(getQueue({ guild: message.guild.id }).player);
+          await message.reply(`Playing ${title}`);
+          player.play(makeResource(url));
+        } else {
+          addSong({ guild: message.guild.id, song });
+          message.reply('Song added to queue');
+        }
       } catch (error) {
         console.log(error);
         await message.reply('Could not play song');
