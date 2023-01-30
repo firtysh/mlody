@@ -43,4 +43,5 @@ COMMAND_PREFIX=<YOUR-PREFIX-HERE>
 5. Commit your changes: `git commit -m "your commit message"`
 6. Push to the branch: `git push origin my-new-feature`
 7. Submit a pull request.
+>**⚠️ Note** : **Don't Forget to lint the code by running `npm run lint:fix`  before commiting the changes.**
 ----
