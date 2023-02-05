@@ -11,7 +11,7 @@
 ## 🔧 **Requirements**
 
 1. Discord Bot Token **[Guide](https://discordjs.guide/preparations/setting-up-a-bot-application.html#creating-your-bot)**  
-   1.1. Enable **Privileged Intents** in Discord Developer Portal
+   1.1. Enable **Privileged Intents** in **[Discord Developer Portal](https://discord.com/developers/applications)**
 2. Node.js 16.17.0 or newer
 ----
 
