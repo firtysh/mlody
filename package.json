@@ -21,6 +21,9 @@
     "url": "https://github.com/firtysh/mlody/issues"
   },
   "homepage": "https://github.com/firtysh/mlody#readme",
+  "engines": {
+    "node": ">=16.17.0"
+  },
   "dependencies": {
     "@discordjs/opus": "^0.8.0",
     "@discordjs/voice": "^0.14.0",
