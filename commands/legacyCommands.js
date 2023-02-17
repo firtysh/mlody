@@ -7,13 +7,25 @@ import {
 } from '@discordjs/voice';
 import ytsr from 'ytsr';
 import makeResource from '../utils/makeResource.js';
-import {
-  addSong,
-  nextSong,
-  getQueue,
-} from '../utils/musicQueue.js';
+import { addSong, nextSong, getQueue } from '../utils/musicQueue.js';
 
 export default {
+  currentSong: {
+    description: 'to display the song name',
+    acceptArgs: false,
+    execute: async ({ message }) => {
+      if (getQueue({ guild: message.guild.id })) {
+        return await message.reply(
+          getQueue({ guild: message.guild.id }).songs[
+            getQueue({ guild: message.guild.id }).currentSong
+          ].title,
+        );
+      }
+      await message.reply(
+        'no songs currently playing in queue kindly play the song first',
+      );
+    },
+  },
   ping: {
     description: 'Ping the bot',
     acceptArgs: false,
@@ -27,11 +39,18 @@ export default {
     execute: async ({ message }) => {
       const voiceConnection = getVoiceConnection(message.guild.id);
       if (message.member.voice.channel) {
-        if (voiceConnection?.joinConfig.channelId === message.member.voice.channel.id) {
+        if (
+          voiceConnection?.joinConfig.channelId
+          === message.member.voice.channel.id
+        ) {
           await message.reply('Already in this voice channel');
           return;
         }
-        if (voiceConnection && voiceConnection?.joinConfig.channelId !== message.member.voice.channel.id) {
+        if (
+          voiceConnection
+          && voiceConnection?.joinConfig.channelId
+            !== message.member.voice.channel.id
+        ) {
           await message.reply('Already in a voice channel');
           return;
         }
@@ -48,7 +67,9 @@ export default {
               entersState(connection, VoiceConnectionStatus.Connecting, 5_000),
             ]);
           } catch (error) {
-            if (connection.state.status === VoiceConnectionStatus.Disconnected) {
+            if (
+              connection.state.status === VoiceConnectionStatus.Disconnected
+            ) {
               connection.destroy();
             }
           }
@@ -74,7 +95,10 @@ export default {
         await message.reply('Not in a voice channel');
         return;
       }
-      if (message.member.voice.channel.id === voiceConnection?.joinConfig.channelId) {
+      if (
+        message.member.voice.channel.id
+        === voiceConnection?.joinConfig.channelId
+      ) {
         await message.reply(`Leaving ${message.member.voice.channel.name}`);
         voiceConnection.destroy();
       } else {
@@ -88,18 +112,23 @@ export default {
     execute: async ({ message, args }) => {
       // get voice connection by guild id
       const voiceConnection = getVoiceConnection(message.guild.id);
-      if (!voiceConnection) { // if bot is not in a voice channel
+      if (!voiceConnection) {
+        // if bot is not in a voice channel
         await message.reply('Not in a voice channel');
         return;
       }
-      if (message.member.voice.channel.id !== voiceConnection?.joinConfig.channelId) {
+      if (
+        message.member.voice.channel.id
+        !== voiceConnection?.joinConfig.channelId
+      ) {
         // if user is not in the same voice channel as the bot
         await message.reply('You need to join the voice channel first!');
         return;
       }
       try {
         // get first result from youtube search
-        const { url, title, duration } = (await ytsr(args, { limit: 1 })).items[0];
+        const { url, title, duration } = (await ytsr(args, { limit: 1 }))
+          .items[0];
 
         // generate song object
         const song = {
@@ -111,7 +140,12 @@ export default {
         if (!getQueue({ guild: message.guild.id })) {
           const player = createAudioPlayer();
           player.on('stateChange', async (oldState, newState) => {
-            console.log('state chnged from', oldState.status, 'to', newState.status);
+            console.log(
+              'state chnged from',
+              oldState.status,
+              'to',
+              newState.status,
+            );
             if (newState.status === 'idle') {
               const next = nextSong({ guild: message.guild.id });
               if (next) {
@@ -123,7 +157,9 @@ export default {
             }
           });
           addSong({ guild: message.guild.id, song, player });
-          voiceConnection.subscribe(getQueue({ guild: message.guild.id }).player);
+          voiceConnection.subscribe(
+            getQueue({ guild: message.guild.id }).player,
+          );
           await message.reply(`Playing ${title}`);
           player.play(makeResource(url));
         } else {
@@ -136,4 +172,5 @@ export default {
       }
     },
   },
+  // this command displays the song that is currently playing
 };
