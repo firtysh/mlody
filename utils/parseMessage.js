@@ -1,4 +1,4 @@
-import { config } from "dotenv";
+import { config } from 'dotenv';
 
 config();
 
@@ -7,8 +7,7 @@ export default (message) => {
     const [command, args] = message
       .trim()
       .substring(process.env.COMMAND_PREFIX.length)
-      .split(" ");
-    console.log(command);
+      .split(/(?<=^\S+)\s+/);
     return { command, args };
   }
   return null;
