@@ -8,18 +8,6 @@ import {
 import ytsr from "ytsr";
 import makeResource from "../utils/makeResource.js";
 import { addSong, nextSong, getQueue } from "../utils/musicQueue.js";
-import { Client, GatewayIntentBits } from "discord.js";
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildVoiceStates,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.GuildPresences,
-  ],
-});
-
 export default {
   currentSong: {
     description: "to display the song name",
