@@ -1,3 +1,11 @@
+/* eslint-disable no-unused-vars */
+/* eslint-disable global-require */
+/* eslint-disable linebreak-style */
+/* eslint-disable import/order */
+/* eslint-disable linebreak-style */
+/* eslint-disable no-undef */
+/* eslint-disable prefer-destructuring */
+/* eslint-disable linebreak-style */
 /* eslint-disable consistent-return */
 /* eslint-disable no-return-await */
 /* eslint-disable no-console */
@@ -7,12 +15,15 @@ import {
   createAudioPlayer,
   getVoiceConnection,
   VoiceConnectionStatus,
-} from "@discordjs/voice";
-import ytsr from "ytsr";
-import makeResource from "../utils/makeResource.js";
-import { addSong, nextSong, getQueue } from "../utils/musicQueue.js";
+} from '@discordjs/voice';
+import ytsr from 'ytsr';
+import makeResource from '../utils/makeResource.js';
+import { addSong, nextSong, getQueue } from '../utils/musicQueue.js';
+import { EmbedBuilder } from 'discord.js';
+// const { MessageEmbed } = require('discord.js');
 
 import commands from "./legacyCommands.js";
+
 
 export default {
   help: {
@@ -239,6 +250,45 @@ export default {
       } else {
         await message.reply("No more songs in queue");
       }
+    },
+  },
+  queue: {
+    description: 'List upcoming songs by order',
+    acceptArgs: false,
+    execute: async ({ message }) => {
+      // basic voice channel check
+      const voiceConnection = getVoiceConnection(message.guild.id);
+      if (!voiceConnection) {
+        await message.reply('Not in a voice channel');
+        return;
+      }
+      if (
+        message.member.voice.channel.id !== voiceConnection?.joinConfig.channelId
+      ) {
+        await message.reply('You need to join the voice channel first!');
+        return;
+      }
+
+      // check if the queue is empty or not.
+      const queue = getQueue({ guild: message.guild.id });
+      if (!queue) {
+        await message.reply('No songs currently playing in queue');
+        return;
+      }
+
+      // list upcoming songs
+      const songs = queue.songs;
+      const embed = {
+        title: 'Upcoming songs',
+        description: 'Current Queue',
+        fields: songs.map((song, index) => ({
+          name: `${index + 1}. ${song.title}`,
+          value: `Duration: ${song.duration}`,
+        })),
+        color: 0x0099ff,
+        timestamp: new Date().toISOString(),
+      };
+      await message.reply({ embeds: [embed] });
     },
   },
 };
