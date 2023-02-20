@@ -15,15 +15,15 @@ import {
   createAudioPlayer,
   getVoiceConnection,
   VoiceConnectionStatus,
-} from '@discordjs/voice';
-import ytsr from 'ytsr';
-import makeResource from '../utils/makeResource.js';
-import { addSong, nextSong, getQueue } from '../utils/musicQueue.js';
-import { EmbedBuilder } from 'discord.js';
+} from "@discordjs/voice";
+import ytsr from "ytsr";
+import makeResource from "../utils/makeResource.js";
+import { addSong, nextSong, getQueue } from "../utils/musicQueue.js";
+import playdl from "play-dl";
+import { EmbedBuilder } from "discord.js";
 // const { MessageEmbed } = require('discord.js');
 
 import commands from "./legacyCommands.js";
-
 
 export default {
   help: {
@@ -169,14 +169,21 @@ export default {
       }
       try {
         // get first result from youtube search
-        const { url, title, duration } = (await ytsr(args, { limit: 1 }))
-          .items[0];
-
+        // const { url, title, duration } = (await ytsr(args, { limit: 1 }))
+        //   .items[0];
+        const songInfo = await playdl.search(message.content.slice(6), {
+          limit: 1,
+        });
+        const url = songInfo[0].url;
+        const title = songInfo[0].title;
+        const duration = songInfo[0].durationRaw;
+        console.log(url, title, duration);
+        const songStream = await playdl.stream(url);
         // generate song object
         const song = {
           title,
           url,
-          duration,
+          duration, 
           requestedBy: message.author.username,
         };
         if (!getQueue({ guild: message.guild.id })) {
@@ -203,7 +210,7 @@ export default {
             getQueue({ guild: message.guild.id }).player
           );
           await message.reply(`Playing ${title}`);
-          player.play(makeResource(url));
+          player.play(makeResource(songStream.stream));
         } else {
           addSong({ guild: message.guild.id, song });
           message.reply("Song added to queue");
@@ -253,34 +260,35 @@ export default {
     },
   },
   queue: {
-    description: 'List upcoming songs by order',
+    description: "List upcoming songs by order",
     acceptArgs: false,
     execute: async ({ message }) => {
       // basic voice channel check
       const voiceConnection = getVoiceConnection(message.guild.id);
       if (!voiceConnection) {
-        await message.reply('Not in a voice channel');
+        await message.reply("Not in a voice channel");
         return;
       }
       if (
-        message.member.voice.channel.id !== voiceConnection?.joinConfig.channelId
+        message.member.voice.channel.id !==
+        voiceConnection?.joinConfig.channelId
       ) {
-        await message.reply('You need to join the voice channel first!');
+        await message.reply("You need to join the voice channel first!");
         return;
       }
 
       // check if the queue is empty or not.
       const queue = getQueue({ guild: message.guild.id });
       if (!queue) {
-        await message.reply('No songs currently playing in queue');
+        await message.reply("No songs currently playing in queue");
         return;
       }
 
       // list upcoming songs
       const songs = queue.songs;
       const embed = {
-        title: 'Upcoming songs',
-        description: 'Current Queue',
+        title: "Upcoming songs",
+        description: "Current Queue",
         fields: songs.map((song, index) => ({
           name: `${index + 1}. ${song.title}`,
           value: `Duration: ${song.duration}`,
