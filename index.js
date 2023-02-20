@@ -1,10 +1,18 @@
 import { config } from 'dotenv';
+import express from "express";
 import { Client, GatewayIntentBits } from 'discord.js';
 import legacyHandler from './handlers/legacyHandler.js';
 import slashHandler from './handlers/slashHandler.js';
 import parseMessage from './utils/parseMessage.js';
 
 config();
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`Server started on ${PORT}`);
+});
 
 const client = new Client({
   intents: [

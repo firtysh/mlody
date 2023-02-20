@@ -13,17 +13,23 @@ import {
   entersState,
   joinVoiceChannel,
   createAudioPlayer,
+  AudioPlayerStatus,
+  createAudioResource,
   getVoiceConnection,
   VoiceConnectionStatus,
-} from '@discordjs/voice';
-import ytsr from 'ytsr';
-import makeResource from '../utils/makeResource.js';
-import { addSong, nextSong, getQueue } from '../utils/musicQueue.js';
-import { EmbedBuilder } from 'discord.js';
+  StreamType,
+} from "@discordjs/voice";
+import ytsr from "ytsr";
+import SpotifyWebApi from "spotify-web-api-node";
+import { config } from "dotenv";
+import makeResource from "../utils/makeResource.js";
+import { addSong, nextSong, getQueue } from "../utils/musicQueue.js";
+import { EmbedBuilder } from "discord.js";
 // const { MessageEmbed } = require('discord.js');
 
-import commands from "./legacyCommands.js";
+config(); 
 
+// import commands from "./legacyCommands.js";
 
 export default {
   help: {
@@ -147,6 +153,98 @@ export default {
         await message.reply("You need to join the voice channel first!");
       }
     },
+  }, // Spotify Integration
+  spotify: {
+    description: "Play tracks from Spotiy",
+    acceptArgs: true,
+    execute: async ({ message }) => {
+      console.log(message.content);
+      // Obtain SPOTIFY_CLIENT_ID SPOTIFY_CLIENT_SECRET from spotify dashboard
+      const spotifyApi = new SpotifyWebApi({
+        clientId: process.env.SPOTIFY_CLIENT_ID,
+        clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
+        redirectUri: `http://localhost:${process.env.PORT}/`,
+      });
+      spotifyApi
+        .clientCredentialsGrant()
+        .then(async (data) => {
+          spotifyApi.setAccessToken(data.body.access_token);
+          // The query to be searched is after <COMMAND_PREFIX>spotify command
+          const query = message.content.slice(8);
+          const voiceConnection = getVoiceConnection(message.guild.id);
+          const tracks = await spotifyApi.searchTracks(query);
+          const track = tracks.body.tracks.items[0];
+          const url = track.preview_url;
+          const title = track.name;
+          const duration = track.duration_ms;
+          const resource = createAudioResource(url);
+          // From here on code is similar to play command from youtube
+          if (!voiceConnection) {
+            // if bot is not in a voice channel
+            await message.reply("Not in a voice channel");
+            return;
+          }
+          if (
+            message.member.voice.channel.id !==
+            voiceConnection?.joinConfig.channelId
+          ) {
+            // if user is not in the same voice channel as the bot
+            await message.reply("You need to join the voice channel first!");
+            return;
+          }
+          const player = createAudioPlayer();
+          try {
+            // generate song object
+            const song = {
+              title,
+              url,
+              duration,
+              requestedBy: message.author.username,
+            };
+            if (!getQueue({ guild: message.guild.id })) {
+              player.on("stateChange", async (oldState, newState) => {
+                console.log(
+                  "state chnged from",
+                  oldState.status,
+                  "to",
+                  newState.status
+                );
+                if (newState.status === "idle") {
+                  const next = nextSong({
+                    guild: message.guild.id,
+                  });
+                  if (next) {
+                    player.play(makeResource(next.url));
+                    await message.reply(`Playing ${next.title}`);
+                  } else {
+                    await message.reply("No more songs in queue");
+                  }
+                }
+              });
+              addSong({ guild: message.guild.id, song, player });
+              voiceConnection.subscribe(
+                getQueue({ guild: message.guild.id }).player
+              );
+              await message.reply(`Playing ${title}`);
+
+              player.play(resource);
+            } else {
+              addSong({ guild: message.guild.id, song });
+              message.reply("Song added to queue");
+            }
+          } catch (error) {
+            console.log(error);
+            player.stop();
+            await message.reply("Could not play song");
+          }
+        })
+        .catch((error) => {
+          console.log(
+            "Something went wrong when retrieving an access token",
+            error
+          );
+        });
+    },
   },
   play: {
     description: "Play a song",
@@ -253,34 +351,35 @@ export default {
     },
   },
   queue: {
-    description: 'List upcoming songs by order',
+    description: "List upcoming songs by order",
     acceptArgs: false,
     execute: async ({ message }) => {
       // basic voice channel check
       const voiceConnection = getVoiceConnection(message.guild.id);
       if (!voiceConnection) {
-        await message.reply('Not in a voice channel');
+        await message.reply("Not in a voice channel");
         return;
       }
       if (
-        message.member.voice.channel.id !== voiceConnection?.joinConfig.channelId
+        message.member.voice.channel.id !==
+        voiceConnection?.joinConfig.channelId
       ) {
-        await message.reply('You need to join the voice channel first!');
+        await message.reply("You need to join the voice channel first!");
         return;
       }
 
       // check if the queue is empty or not.
       const queue = getQueue({ guild: message.guild.id });
       if (!queue) {
-        await message.reply('No songs currently playing in queue');
+        await message.reply("No songs currently playing in queue");
         return;
       }
 
       // list upcoming songs
       const songs = queue.songs;
       const embed = {
-        title: 'Upcoming songs',
-        description: 'Current Queue',
+        title: "Upcoming songs",
+        description: "Current Queue",
         fields: songs.map((song, index) => ({
           name: `${index + 1}. ${song.title}`,
           value: `Duration: ${song.duration}`,
