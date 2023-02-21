@@ -23,7 +23,7 @@ import playdl from 'play-dl';
 import { EmbedBuilder } from 'discord.js';
 // const { MessageEmbed } = require('discord.js');
 
-// import commands from './legacyCommands.js';
+import commands from './legacyCommands.js';
 
 export default {
   help: {
