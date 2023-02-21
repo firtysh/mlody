@@ -17,7 +17,7 @@ import {
   VoiceConnectionStatus,
 } from "@discordjs/voice";
 import ytsr from "ytsr";
-import makeResource from "../utils/makeResource.js";
+import { makeResource } from "../utils/makeResource.js";
 import { addSong, nextSong, getQueue } from "../utils/musicQueue.js";
 import playdl from "play-dl";
 import { EmbedBuilder } from "discord.js";
@@ -167,30 +167,23 @@ export default {
         await message.reply("You need to join the voice channel first!");
         return;
       }
+
       try {
         // get first result from youtube search
-        // const { url, title, duration } = (await ytsr(args, { limit: 1 }))
-        //   .items[0];
-        const songInfo = await playdl.search(message.content.slice(6), {
-          limit: 1,
-        });
-        const url = songInfo[0].url;
-        const title = songInfo[0].title;
-        const duration = songInfo[0].durationRaw;
-        console.log(url, title, duration);
-        const songStream = await playdl.stream(url);
+        const { url, title, duration } = (await ytsr(args, { limit: 1 }))
+          .items[0];
         // generate song object
         const song = {
           title,
           url,
-          duration, 
+          duration,
           requestedBy: message.author.username,
         };
         if (!getQueue({ guild: message.guild.id })) {
           const player = createAudioPlayer();
           player.on("stateChange", async (oldState, newState) => {
             console.log(
-              "state chnged from",
+              "state changed from",
               oldState.status,
               "to",
               newState.status
@@ -210,7 +203,7 @@ export default {
             getQueue({ guild: message.guild.id }).player
           );
           await message.reply(`Playing ${title}`);
-          player.play(makeResource(songStream.stream));
+          player.play(makeResource(url));
         } else {
           addSong({ guild: message.guild.id, song });
           message.reply("Song added to queue");
