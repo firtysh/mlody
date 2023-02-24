@@ -17,89 +17,86 @@ import {
   createAudioResource,
   getVoiceConnection,
   VoiceConnectionStatus,
-  StreamType,
-} from "@discordjs/voice";
-import ytsr from "ytsr";
-import SpotifyWebApi from "spotify-web-api-node";
-import { config } from "dotenv";
-import makeResource from "../utils/makeResource.js";
-import { addSong, nextSong, getQueue } from "../utils/musicQueue.js";
-import { EmbedBuilder } from "discord.js";
+} from '@discordjs/voice';
+import ytsr from 'ytsr';
+import SpotifyWebApi from 'spotify-web-api-node';
+import { config } from 'dotenv';
+import makeResource from '../utils/makeResource.js';
+import { addSong, nextSong, getQueue } from '../utils/musicQueue.js';
+import { EmbedBuilder } from 'discord.js';
 // const { MessageEmbed } = require('discord.js');
 
-config(); 
-
-// import commands from "./legacyCommands.js";
+config();
+import commands from './legacyCommands.js';
 
 export default {
   help: {
-    description: "displays all the commands ",
+    description: 'displays all the commands ',
     acceptArgs: false,
     execute: async ({ message }) => {
-      let msg = ``;
-      for (let key in commands) {
-        msg =
-          msg +
-          `command : ${key} | description : ${commands[key].description}\n`;
+      let msg = '';
+      for (const key in commands) {
+        msg
+          += `command : ${key} | description : ${commands[key].description}\n`;
       }
       await message.reply(msg);
     },
   },
   currentSong: {
-    description: "to display the song name",
+    description: 'to display the song name',
     acceptArgs: false,
     execute: async ({ message }) => {
       if (getQueue({ guild: message.guild.id })) {
         return await message.reply(
           getQueue({ guild: message.guild.id }).songs[
             getQueue({ guild: message.guild.id }).currentSong
-          ].title
+          ].title,
         );
       }
       await message.reply(
-        "no songs currently playing in queue kindly play the song first"
+        'no songs currently playing in queue kindly play the song first',
       );
     },
   },
   ping: {
-    description: "Ping the bot",
+    description: 'Ping the bot',
     acceptArgs: false,
     execute: async ({ message }) => {
       // Send a message to the channel
-      message.channel.send("Pinging...").then((msg) => {
+      message.channel.send('Pinging...').then((msg) => {
         // Calculate the bot latency
         const botLatency = Math.round(
-          msg.createdTimestamp - message.createdTimestamp
+          msg.createdTimestamp - message.createdTimestamp,
         );
 
         // Calculate the API latency
         const apiLatency = Math.round(message.client.ws.ping);
         // again send the reply to the bot after calculating ..
         msg.reply(
-          `Bot latency is :${botLatency}ms | API latency is ${apiLatency}ms`
+          `Bot latency is :${botLatency}ms | API latency is ${apiLatency}ms`,
         );
       });
     },
   },
   join: {
-    description: "Join audio channel",
+    description: 'Join audio channel',
     acceptArgs: false,
     execute: async ({ message }) => {
       const voiceConnection = getVoiceConnection(message.guild.id);
       if (message.member.voice.channel) {
         if (
-          voiceConnection?.joinConfig.channelId ===
-          message.member.voice.channel.id
+          voiceConnection?.joinConfig.channelId
+          === message.member.voice.channel.id
         ) {
-          await message.reply("Already in this voice channel");
+          await message.reply('Already in this voice channel');
           return;
         }
         if (
-          voiceConnection &&
-          voiceConnection?.joinConfig.channelId !==
-            message.member.voice.channel.id
+          voiceConnection
+          && voiceConnection?.joinConfig.channelId
+            !== message.member.voice.channel.id
         ) {
-          await message.reply("Already in a voice channel");
+          await message.reply('Already in a voice channel');
           return;
         }
         await message.reply(`Joining ${message.member.voice.channel.name}`);
@@ -122,7 +119,7 @@ export default {
             }
           }
         });
-        connection.on("error", () => {
+        connection.on('error', () => {
           try {
             connection.destroy();
           } catch (error) {
@@ -130,27 +127,27 @@ export default {
           }
         });
       } else {
-        await message.reply("You need to join a voice channel first!");
+        await message.reply('You need to join a voice channel first!');
       }
     },
   },
   leave: {
-    description: "Leave audio channel",
+    description: 'Leave audio channel',
     acceptArgs: false,
     execute: async ({ message }) => {
       const voiceConnection = getVoiceConnection(message.guild.id);
       if (!voiceConnection) {
-        await message.reply("Not in a voice channel");
+        await message.reply('Not in a voice channel');
         return;
       }
       if (
-        message.member.voice.channel.id ===
-        voiceConnection?.joinConfig.channelId
+        message.member.voice.channel.id
+        === voiceConnection?.joinConfig.channelId
       ) {
         await message.reply(`Leaving ${message.member.voice.channel.name}`);
         voiceConnection.destroy();
       } else {
-        await message.reply("You need to join the voice channel first!");
+        await message.reply('You need to join the voice channel first!');
       }
     },
   }, // Spotify Integration
@@ -247,29 +244,29 @@ export default {
     },
   },
   play: {
-    description: "Play a song",
+    description: 'Play a song',
     acceptArgs: true,
     execute: async ({ message, args }) => {
       // get voice connection by guild id
       const voiceConnection = getVoiceConnection(message.guild.id);
       if (!voiceConnection) {
         // if bot is not in a voice channel
-        await message.reply("Not in a voice channel");
+        await message.reply('Not in a voice channel');
         return;
       }
       if (
-        message.member.voice.channel.id !==
-        voiceConnection?.joinConfig.channelId
+        message.member.voice.channel.id
+        !== voiceConnection?.joinConfig.channelId
       ) {
         // if user is not in the same voice channel as the bot
-        await message.reply("You need to join the voice channel first!");
+        await message.reply('You need to join the voice channel first!');
         return;
       }
+
       try {
         // get first result from youtube search
         const { url, title, duration } = (await ytsr(args, { limit: 1 }))
           .items[0];
-
         // generate song object
         const song = {
           title,
@@ -279,62 +276,62 @@ export default {
         };
         if (!getQueue({ guild: message.guild.id })) {
           const player = createAudioPlayer();
-          player.on("stateChange", async (oldState, newState) => {
+          player.on('stateChange', async (oldState, newState) => {
             console.log(
-              "state chnged from",
+              'state changed from',
               oldState.status,
-              "to",
-              newState.status
+              'to',
+              newState.status,
             );
-            if (newState.status === "idle") {
+            if (newState.status === 'idle') {
               const next = nextSong({ guild: message.guild.id });
               if (next) {
                 player.play(makeResource(next.url));
                 await message.reply(`Playing ${next.title}`);
               } else {
-                await message.reply("No more songs in queue");
+                await message.reply('No more songs in queue');
               }
             }
           });
           addSong({ guild: message.guild.id, song, player });
           voiceConnection.subscribe(
-            getQueue({ guild: message.guild.id }).player
+            getQueue({ guild: message.guild.id }).player,
           );
           await message.reply(`Playing ${title}`);
           player.play(makeResource(url));
         } else {
           addSong({ guild: message.guild.id, song });
-          message.reply("Song added to queue");
+          message.reply('Song added to queue');
         }
       } catch (error) {
         console.log(error);
-        await message.reply("Could not play song");
+        await message.reply('Could not play song');
       }
     },
   },
   skip: {
-    description: "Skip current song",
+    description: 'Skip current song',
     acceptArgs: false,
     execute: async ({ message }) => {
       // check if the bot has joined voice channel or not.
       const voiceConnection = getVoiceConnection(message.guild.id);
       if (!voiceConnection) {
-        await message.reply("Not in a voice channel");
+        await message.reply('Not in a voice channel');
         return;
       }
 
       // check if the user is in the same voice channel as the bot or not.
       if (
-        message.member.voice.channel.id !==
-        voiceConnection?.joinConfig.channelId
+        message.member.voice.channel.id
+        !== voiceConnection?.joinConfig.channelId
       ) {
-        await message.reply("You need to join the voice channel first!");
+        await message.reply('You need to join the voice channel first!');
         return;
       }
 
       // check if the queue is empty or not.
       if (!getQueue({ guild: message.guild.id })) {
-        await message.reply("No songs currently playing in queue");
+        await message.reply('No songs currently playing in queue');
         return;
       }
 
@@ -342,11 +339,11 @@ export default {
       const next = nextSong({ guild: message.guild.id });
       if (next) {
         getQueue({ guild: message.guild.id }).player.play(
-          makeResource(next.url)
+          makeResource(next.url),
         );
         await message.reply(`Playing ${next.title}`);
       } else {
-        await message.reply("No more songs in queue");
+        await message.reply('No more songs in queue');
       }
     },
   },
@@ -361,8 +358,8 @@ export default {
         return;
       }
       if (
-        message.member.voice.channel.id !==
-        voiceConnection?.joinConfig.channelId
+        message.member.voice.channel.id
+        !== voiceConnection?.joinConfig.channelId
       ) {
         await message.reply("You need to join the voice channel first!");
         return;
